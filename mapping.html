@@ -1,0 +1,180 @@
+<html lang="en">
+    <head>
+        
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+        
+        <!-- documentation at http://getbootstrap.com/docs/4.0/, alternative themes at https://bootswatch.com/4-alpha/ -->
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" rel="stylesheet"/>
+        
+        <title>
+            Tech and Kyle: All Roads Lead to Maria's
+        </title>
+        
+        <style>
+            #viewDiv {
+            height: 50%;
+            width: 50%;
+            margin: auto;
+            border-radius: 8px;
+            border-style: solid;
+            border-color: #add3ff;
+            box-shadow: 5px 5px 10px #85afff;
+        </style>
+        
+        <link rel="stylesheet" href="https://js.arcgis.com/4.18/esri/themes/light/main.css">
+        <script src="https://js.arcgis.com/4.18/"></script>
+        
+        <script>
+            require([
+              "esri/config",
+              "esri/Map",
+              "esri/views/MapView",
+              
+              "esri/Graphic",
+              "esri/tasks/RouteTask",
+              "esri/tasks/support/RouteParameters",
+              "esri/tasks/support/FeatureSet"
+                      
+              
+            ], function(esriConfig, Map, MapView, Graphic, RouteTask, RouteParameters, FeatureSet) {
+                esriConfig.apiKey = "AAPKb9a080acf1114041bd4975958f0182a1ShKSe3H2chSqi4f2l8E6-lj2Yx_YHlHNOSmwdNaoBc4fs0ni0xEaKm2yv5ia-0U8"
+                
+                
+                //setting up the map, mapView and routeTask
+                const map = new Map({
+                    basemap: "arcgis-navigation"
+                });
+                
+                const view = new MapView({
+                    container: "viewDiv",
+                    map: map,
+                    center: [-71.058632,42.358990],
+                    zoom: 8,
+                    constraints: {
+                        snapToZoom: false
+                    }
+                });
+                
+                const routeTask = new RouteTask({
+                    url: "https://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
+                });
+                /////////////////////////////////
+                
+                
+                //setting up the point for Maria's sub shop
+                const point = {
+                    type: "point",
+                    longitude: -70.726990,
+                    latitude: 42.197880,
+                };
+                const originSymbol = {
+                    type: "simple-marker",
+                    color: [255,0,0],
+                    size: "5px"
+                };
+                
+                const destinationSymbol = {
+                    type: "simple-marker",
+                    color: [0,255,0],
+                    size: "5px"
+                };
+                
+                const destinationGraphic = new Graphic({
+                    geometry: point,
+                    symbol: destinationSymbol,
+                    type: "destination"
+                });
+                view.graphics.add(destinationGraphic);
+                ////////////////////////////////////
+                
+                
+                //on click method
+                view.on("click", function(event) {
+                    
+                    //first, test for the case that a route has already been generated. If so, remove all graphics and re-add the destination
+                    if (view.graphics.length !== 1) {
+                        view.graphics.removeAll();
+                        view.graphics.add(destinationGraphic);
+                    }
+                    
+                    //generate an origin, add it to the map
+                    const originGraphic = new Graphic({
+                        geometry: event.mapPoint,
+                        symbol: originSymbol,
+                        type: "origin"
+                    });
+                    view.graphics.add(originGraphic);
+                    
+                    getRoute();
+                });
+                ////////////////////////////////////////
+                
+                
+                //get Route and directions
+                function getRoute() {
+                    const routeParams = new RouteParameters({
+                        stops: new FeatureSet({
+                            features: view.graphics.toArray().reverse()
+                        }),
+                        
+                        returnDirections: true
+                    });
+                    
+                    routeTask.solve(routeParams)
+                        .then(function(data) {
+                            data.routeResults.forEach(function(result) {
+                                result.route.symbol = {
+                                    type: "simple-line",
+                                    color: [5, 150, 255],
+                                    width: 3
+                                };
+                                view.graphics.add(result.route);
+                            });
+                            
+                            // Display directions
+                            if (data.routeResults.length > 0) {
+                                const directions = document.createElement("ol");
+                            directions.classList = "esri-widget esri-widget--panel esri-directions__scroller";
+                            directions.style.marginTop = "0";
+                            directions.style.padding = "15px 15px 15px 30px";
+                            const features = data.routeResults[0].directions.features;
+                            
+                            //Show each direction
+                            features.forEach(function(result, i){
+                                const direction = document.createElement("li");
+                                direction.innerHTML = result.attributes.text + " (" + result.attributes.length.toFixed(2) + " miles)";
+                                directions.appendChild(direction);
+                            });
+                            
+                            view.ui.empty("top-right");
+                            view.ui.add(directions, "top-right");
+                            }
+                        })
+                    
+                }
+            });
+        </script>
+        
+    </head>
+    <body style="background-color: #ebf5fe;">
+        <nav class="navbar navbar-expand-md navbar-light border" style="background-color: #d7ebff;">
+            <button aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar" data-toggle="collapse" type="button">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <h1 style="margin-left: auto; margin-right: auto;"> <a href="/" style="text-decoration: none; color: inherit;">Tech and Kyle</a></h1>
+            <div class="collapse navbar-collapse" id="navbar">
+                <ul class="navbar-nav ml-auto mt-2">
+                    <li class="nav-item" style="display: flex; align-items: center; font-weight: bold; cursor: default;">Kyle Compton</li>
+                    <li class="nav-item"><a class="nav-link" href="/Kyle Compton Resume_01_29_21.pdf">Resume</a></li>
+                    <li class="nav-item"><a class="nav-link" href="https://www.linkedin.com/in/kyle-compton/"><img src="/pictures/LinkedIn.png" style="height:25px; width: 25px;"></a></li>
+                    <li class="nav-item"><a class="nav-link" href="https://github.com/kpcompton56"><img src="/pictures/Github.png" style="height:25px; width: 25px;"></a></li>
+                </ul>
+            </div>
+        </nav>
+        <br>
+        <h2 style="width: 50%; margin: auto; text-align:center; cursor: default;">All Roads Lead to Maria's</h2>
+        <div style="width: 50%; margin: auto; text-align:center; cursor: default;">One time when my Mom was in college, she drove SIX HOURS home from Syracuse University just to get a sub at Maria's Sub Shop. In the spirit of making these trips like this easier, and in order to gain some exposure to ArcGIS mapping technology, I thought I'd build an app that provides directions to Maria's from anywhere you like. Just click your location on the map to get directions. Enjoy!</div>
+        <div id="viewDiv"></div>
+    </body>
+</html>
